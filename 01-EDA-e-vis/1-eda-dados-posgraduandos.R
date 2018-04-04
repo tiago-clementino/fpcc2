@@ -46,7 +46,7 @@ glimpse(dados)
 # Variáveis numéricas
 # ------------------------------------
 
-# Altura
+# Altura -
 ggplot(data = dados, 
        mapping = aes(x = "valor", 
                      y = altura)) + 
