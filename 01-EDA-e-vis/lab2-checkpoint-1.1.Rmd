@@ -1,0 +1,504 @@
+---
+title: "LPCC02 - Lab 2 - Checkpoint 1"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+**Tiago Lucas Pereira Clementino**
+
+**15 de abril de 2018**
+
+### Bibliotecas utilizadas
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(here)
+library(knitr)
+library(gridExtra)
+library(ggExtra)
+library(gapminder)
+library(ggalt)
+theme_set(theme_bw())
+options(warn=-1)
+```
+
+# Contexto
+
+Nosso objetivo é analisar e extrair informação de dados coletados por uma plataforma aberta de integração contínua chamada Travistorrent. O Travisttorrent é um serviço de integração contínua de projetos disponíveis no Github, um repositório de projetos colaborativos também aberto.
+
+A integração contínua é um processo onde o desenvolvedor integra o código alterado e/ou criado ao projeto principal na mesma frequência com que as funcionalidades são introduzidas.
+
+Nossa intenção é analisar os dados fazendo um paralelo entre as linguagens de programação Java e Ruby, levantando questões inerentes às características dos projetos de software que as utilizam. Diante disto, descartamos quaisquer dados referentes a outras linguagens.
+
+# Nossos Dados
+
+Os dados são informações diversas, referentes a projetos disponíveis no Github e que, no momento da coleta, utilizaram o Travistorent nos últimos três meses, além de corresponder a certas especificações de filtragem. Estas informações descrevem operações inerentes ao andamento de projetos no Github e a procedimentos de integração contínua (testes, *commits*, PR, *builds* de integração, etc) ao longo de um certo período de tempo.
+
+### Carregando os dados
+
+```{r read}
+projetos = read_csv(here::here("dados/projetos.csv"))
+```
+
+### Filtrando os dados (eliminando linguagens diferentes de Java e Ruby identificadas)
+
+```{r clean}
+projetos = projetos %>% 
+    filter(lang != "javascript")
+```
+
+# Variáveis
+
+Nossa base de dados conta com variáveis bem intuitivas.
+
+```{r}
+projetos %>% names()
+```
+
+Cada uma delas descreve alguma característica dos projetos. 
+
+Nome                      | Descrição                                                                    | Tipo
+--------------------------|------------------------------------------------------------------------------|------------
+**gh_project_name**       | nome do projeto                                                              | Categórica
+**team**                  | total de desenvolvedores que participaram do projeto até sua última medição  | Numérica
+**lang**                  | linguagem de programação predominante                                        | Categórica
+**sloc_end**              | total de linhas de código na última medição do projeto                       | Numérica
+**sloc_med**              | total de linhas de código no meio do tempo de atividade estimado do projeto  | Numérica
+**activity_period**       | tempo de atividade estimado do projeto                                       | Numérica
+**num_commits**           | total de submissões de alteração durante todo o tempo de atividade do projeto| Numérica
+**commits_per_month**     | total de submissões por mês                                                  | Numérica
+**tests_per_kloc**        | casos de teste por total de linhas de código                                 | Numérica  
+**total_builds**          | total de integrações                                                         | Numérica
+**build_success_prop**    | proporção de integrações bem-sucedidas                                       | Numérica
+**builds_per_month**      | total médio de integrações por mês                                           | Numérica
+**tests_added_per_build** | total médio de testes adicionados por integração                             | Numérica
+**tests_successful**      | total de testes bem-sucedidos                                                | Numérica
+**test_density**          | densidade de testes                                                          | Numérica
+**test_size_avg**         | tamanho médio dos casos de testes                                            | Numérica
+
+Na nossa análise buscaremos uma ou mais características da relação entre as variáveis **sloc_end** e **sloc_med**, e **tests_per_kloc** e **test_size_avg** explorando marcas e canais gráficos. Além de incluirmos **activity_period**, **team** e **lang** eventualmente para posicionar nossas análises no nosso conjunto de dados.
+
+# Distribuições dos dados entre Java e Ruby 
+
+O gráfico abaixo apresenta a distribuição dos dados entre Java e Ruby. É fácil perceber que a vantagem numérica de Ruby em relação à Java é grande, mas isto não deve interferir em nossas observações. Nossas análises farão um paralelo entre estas duas linguagens.
+
+```{r}
+projetos %>% 
+  group_by(lang) %>% 
+  summarise(projetos_ = n()) %>% 
+  ggplot(aes(x = lang, y = projetos_)) + 
+  geom_col(fill = "darkcyan", color = "darkcyan") +
+  labs(x=NULL,  
+    y='Projetos', 
+    title="Dados por Linguagem (Java x Ruby)", 
+    subtitle="(lang, n)", 
+    caption="Travistorrent") +
+  theme(plot.title = element_text(face="bold"),panel.border=element_blank())
+```
+
+# Objetivos
+
+Precisamos avaliar um conjunto de variáveis em um exercício de visualização de correlações de dados através de marcas e canais. O objetivo de nossa investigação é entender os dados e as relações entre suas variáveis. Tendo isto em vista, é importante ser capaz de escolher as marcas e canais adequados para nossa análise.
+
+A partir disto, devemos propor possíveis correlações alvo ligadas às relações entre variáveis que julguemos interessantes, para em seguida proceder a análise.
+
+### Regras
+
+De acordo com o enunciado do Laboratório 2 da disciplina LPCC2, devemos elaborar pelo menos seis gráficos envolvendo quatro variáveis diferentes. Cada um com ao menos duas marcas distintas.
+
+# Variáveis de estudo
+
+Selecionamos para este relatório quatro variáveis que serão alvo de comparações, medições e visualizações, são elas: **sloc_end**, **sloc_med**, **tests_per_kloc** e **test_size_avg**, outras variáveis também podem ser usadas na comparação, como **lang**, **activity_period** ou **team**. Nosso objetivo é observar seu comportamento, confirmando ou refutando certas perspectivas de correlação que chamaremos de questões e são descritas abaixo.
+
+# Análise
+
+A partir daqui analisaremos nossos dados com base em questões levantadas a partir de correlações entre variáveis. Neste estudo, o principal foco é a análise visual. Utilizaremos diversas variedades de gráficos estatísticos, canais de visualização e marcas.
+
+Um canal é uma dimensão usada para converter dados de uma tabela em uma visualização gráfica. Um canal pode ser de alta ou baixa magnitude, representando uma eficácia na visualização de informação maior ou menor. 
+
+Nosso primeiro objetivo é entender como o volume de código se comporta ao longo do tempo, e faremos isto comparando as variáveis **sloc_end** e **sloc_med** em relação à outras variáveis. Em seguida tentaremos entender a relação entre **tests_per_kloc** e **test_size_avg**, sempre fazendo um paralelo com variáveis significativas como **lang** e/ou **team**, priorizando canais mais eficazes para variáveis alvo de análise.
+
+### **sloc_end** e **sloc_med**
+
+A principal relação entre estas duas variáveis é o tempo. **sloc_med**, como já foi mencionado, mede o volume de código de um projeto na metade de seu tempo de vida (até o fim da medição dos dados), já **sloc_end** mede o volume total de código no fim do período de medição. É de se esperar que **sloc_med** sejá menor que **sloc_end**, mas qual a proporção desta diferença?
+
+Para começar a responder esta pergunta poderíamos pensar em usar um gráfico de dispersão (*scatter plot*). O gráfico de dispersão posiciona todos os elementos observados como pontos em um plano cartesiano, onde x corresponde a uma variável e y à outra.
+
+Um bom tipo de gráfico para relacionar **sloc_med** e **sloc_end** é o *Dumbbell Plot*, que pode ser visto como uma variação do gráfico de dispersão. Nele o canal "posicionamento bidimensional"" está representado na forma de pontos em um plano tal como o gráfico de dispersão. Porém, o eixo x apresenta duas variáveis e a progressão de uma até a outra, formando uma linha (o comprimento da linha é mais um canal). Abaixo está um *Dumbbell Plot* onde x descreve a variável **sloc_med** e a distância entre ela e **sloc_end**. Incluiremos também as variáveis **lang** e **team** nos canais cor dos pontos e dimensão vertical para posicionar melhor nosso gráfico nos nossos dados.
+
+```{r message=FALSE, warning=FALSE}
+gg <- projetos %>%
+  ggplot(aes(x=sloc_med, xend=sloc_end, y=team, group=team, color=lang)) + 
+    geom_dumbbell(size=1.0, alpha=.3) + 
+    scale_y_log10()+ 
+    labs(x='Código desenvolvida na segunda metade da vida do projeto',  
+      y='Tamanho da equipe', 
+      title="Progressão do Desenvolvimento do Código", 
+      subtitle="( (sloc_me,sloc_end) ,team)", 
+      caption="Travistorrent") +
+    theme(plot.title = element_text(face="bold"),
+      plot.background=element_rect(fill="#ffffff"),
+      panel.background=element_rect(fill="#ffffff"),
+      legend.background = element_rect(fill="#ffffff"),
+      panel.grid.minor=element_blank(),
+      panel.grid.major.y=element_blank(),
+      panel.grid.major.x=element_line(color="#a3c4dc"),
+      axis.ticks=element_blank(),
+      legend.position="top",
+      axis.text.x = element_blank(),
+      panel.border=element_blank())
+plot(gg)
+```
+
+Observando os pontos e traços neste gráfico podemos ter a ideia de que talvez a maior parte do desenvolvimento ocorra entre o início e a primeira metade do projeto. Isto com base na diferença entre o comprimento dos traços que descrevem a distância entre **sloc_med** e **sloc_end**, e a distância entre **sloc_med** e a origem de x. Porém, é uma conclusão muito inicial, pois há muitos pontos aglomerados de difícil visualização, além de alguns pontos com grandes distâncias entre **sloc_med** e **sloc_end**.
+
+Uma nova evidência para esta afirmação poderia ser obtida observando não as duas variáveis separadas, mas uma nova variável composta pela proporção entre elas. A fórmula "(sloc_med\*100)/sloc_end" nos traz este valor. Novamente, para posicionar melhor nossa visualização nos nossos dados, incluiremos as seguintes três variáveis no gráfico; **team**, **activity_period** e **lang** nos canais dimensão horizontal, área do ponto e cor, respectivamente. Um *boxplot* para cada um de cem *breaks* (quando diferentes de vazio) ajuda a visualizar a relação.
+
+```{r}
+projetos %>%
+  ggplot(aes(x=cut(team, breaks=100), y=(sloc_med*100)/sloc_end)) +
+  geom_count(aes(color=lang,size=activity_period),alpha = .2)+ 
+  geom_boxplot(outlier.alpha = .0, fill='#000000', color = "darkcyan") +
+    labs(x='Tamanho da equipe', 
+      y='Código desenvolvida até metade da vida do projeto (%)', 
+      color='Linguagem', 
+      size='Período de atividade', 
+      title="Progressão do Desenvolvimento do Código", 
+      subtitle="(team, (sloc_med*100) / sloc_end)", 
+      caption="Travistorrent") +
+  theme(plot.title = element_text( face="bold"),
+    plot.background=element_rect(fill="#ffffff"),
+    legend.background = element_rect(fill="#ffffff"),
+    panel.background=element_rect(fill="#ffffff"),
+    panel.grid.minor=element_blank(),
+    panel.grid.major.y=element_blank(),
+    panel.grid.major.x=element_line(),
+    axis.ticks=element_blank(),
+    axis.text.x = element_blank(),
+    legend.position="top",
+    panel.border=element_blank())
+```
+
+No gráfico acima é possível perceber que a maior parte dos pontos está acima de 60%, o que nos leva a concluir que geralmente mais da metade do código é escrito no início do projeto. Além disto, é frequênte, de acordo com o gráfico, projetos com 80% ou 90% do desenvolvimento ocorrido na primeira metade de sua vida. Observando os *bosplots* pode-se perceber apenas um *box* abaixo de 50%, e com apenas um projeto.
+
+Uma visualização mais clara talvez possa vir com um gráfico de dispersão (*scatter plot*) simples, que descreve a posição de cada projeto em um plano cartesiano onde x é o **sloc_end** e y é **sloc_med**. Novamente, incluiremos também as variáveis **lang** e **team** nos canais cor e área dos pontos para posicionar melhor nosso gráfico nos nossos dados.
+
+```{r}
+projetos %>% 
+    ggplot(aes(x= sloc_end, y= sloc_med , color = lang, size=team),na.rm=TRUE) + 
+    scale_x_log10()+ 
+    scale_y_log10()+ 
+    geom_point(alpha = .3) + 
+        labs(x='Total de linhas de código (final)',  
+             y='Total de linhas de código (mediana)', 
+             title='Progressão do volume do código', 
+             color='Linguagem', 
+             size='Tamanho da equipe', 
+             subtitle='(sloc_end, sloc_med)', 
+             caption="Travistorrent") +
+  theme_bw() +
+  theme(plot.title = element_text(face="bold"),
+        panel.border=element_blank(),
+        legend.position="top",
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        plot.margin=unit(c(10,0,0,0),"points"))
+
+```
+
+Veja a eficácia do canal "posicionamento no plano", apenas com base no gráfico acima já podemos perceber claramente dois atributos desta relação. O primeiro aponta que de fato, como já poderíamos supor, **sloc_end** é maior que **sloc_med** aparentemente em todos os casos. Perceba que não há nenhum ponto acima da diagonal principal do nosso gráfico. Neste momento, não podemos garantir que esta afirmação é verdade para todos os casos, pois os canais de visualização geralmente proveem apenas uma direção para a análise. Em buscar de uma resposta categórica, precisamos de um modelo. Veja abaixo.
+
+```{r}
+
+projetos %>% 
+  filter(sloc_med > sloc_end) %>%
+  summarise(`Total de projetos com mais código na metade de seu tempo de vida que o final`=n())
+
+```
+
+Agora podemos afirmar categoricamente que nenhum projeto em nossa base encolheu (refatoramento) entre a metade e o fim de sua vida. O segundo atributo da relação entre estas duas variáveis diz respeito à linearidade. É possível perceber que a figura composta pelos pontos no gráfico forma uma linha muito nítida à quase que exatos 45° de inclinação, bem em cima da diagonal principal do gráfico. Isto sugere que os valores de **sloc_med** e **sloc_end** são muito parecidos, o que nos leva a crer que a maior parte do desenvolvimento ocorra na primeira metade da vida dos projetos na nossa base de dados, como os dois gráficos anteriores já demonstravam.
+
+Novamente os canais de visualização nos apontam a direção da análise, mas para responder se a maior parte do desenvolvimento realmente ocorre no início do projeto devemos recorrer aos modelos. Através de um coeficiente de correlação linear entre **sloc_med** e **sloc_end** podemos ter a confirmação que buscamos. Nesta correlação sempre retornará um valor entre -1 e 1, onde -1 representa uma perfeita correlação decrescente, 0 a ausência de correlação e 1 representa uma correlação crescente forte. Aqui calculamos a correção entre estas variáveis de três métodos diferentes.
+
+```{r}
+projetos %>%
+    summarise(pearson = cor(sloc_end, sloc_med, method = "pearson"),
+              spearman = cor(sloc_end, sloc_med, method = "spearman"),
+              kendall = cor(sloc_end, sloc_med, method = "kendall"))
+```
+
+A tabela apresenta os três valores referentes as três formas de calcular a correlação entre as variáveis. Perceba que todos apresentam uma correlação superior a 0.9, o que indica uma forte correlação. Esta evidência responde nossa atual dúvida. De fato, como os gráficos mostraram, a maior parte do desenvolvimento ocorre na primeira metade do projeto.
+
+#### Conclusão
+
+Podemos concluir com base nos gráficos e resultados matemáticos, que nenhum projeto teve seu código refatorado a ponto de encolher da metade do tempo de vida do projeto até o fim e que a maior parte do desenvolvimento ocorre, em média, na primeira metade do tempo de vida do projeto.
+
+Como ameaça à validade desta conclusão, podemos mencionar que a variável **sloc_end** não representa, de fato, o fim da vida do projeto, mas o fim da medição. Alguns projetos podem ter entrado em produção (quando passar a sofrer muito menos alterações) antes mesmo do momento em que **sloc_med** foi registrado, outros não terem atingido a maturidade mesmo ao final do tempo total.
+
+### **tests_per_kloc** e **test_size_avg**
+
+Uma relação presente entre estas duas variáveis é que ambas aumentam o volume total do código destinado a testes. **tests_per_kloc** mede o volume de testes por mil linhas de código, já **test_size_avg** mede o tamanho médio de cada caso de teste em um projeto. Casos de teste mais complexos demandam mais código (geralmente), mas a maioria dos casos são descritos em poucas linhas. Por isto é de se esperar que o tamanho médio destes casos não seja muito grande. Porém, como veremos adiante, não é exatamente o que acontece. Muitos projetos têm, em média, casos de teste demasiadamente grandes. Um caso de teste grande pode representar um problema complexo ou mais de um caso de teste em um só. Com isto temos a pergunta: Casos de teste muito grandes levam a menos casos de testes?
+
+O posicionamento no espaço bidimensional é o canal de mais alta magnitude em gráficos estatísticos. Por isso o gráfico de dispersão, quando aplicável, será sempre uma boa opção para iniciar uma análise. Este possibilita não apenas a visualização dos valores numéricos em escala, mas também a marcação da identidade de outras variáveis categóricas.
+
+Em busca da resposta para a pergunta proposta partiremos de um gráfico de dispersão comparativo, onde x é **tests_per_kloc** e y é **test_size_avg**. Mais uma vez, incluiremos também as variáveis **lang** e **team** nos canais cor e área dos pontos para posicionar melhor nosso gráfico nos nossos dados.
+
+```{r message=FALSE, warning=FALSE}
+projetos %>% 
+  ggplot(aes(x= tests_per_kloc, y= test_size_avg)) + 
+  scale_x_log10()+ 
+  scale_y_log10()+ 
+  geom_point(aes(x= tests_per_kloc, y= test_size_avg, size=team, color=lang), alpha = .3) +
+  stat_smooth(method='loess', se=F)+
+  labs(x='Testes por 1000 linhas de código',  
+    y='Tamanho dos casos de teste', 
+    caption="Travistorrent",
+    size="Tamanho da equipe",
+    color="Linguagem",
+    title="Volume de teste x Tamanho dos testes",
+    subtitle="(tests_per_kloc, test_size_avg)") +
+  theme(panel.border=element_blank(),
+    legend.position="bottom",
+    plot.margin=unit(c(10,0,0,0),"points"))
+```
+
+É possível observar uma certa correlação linear entre as duas variáveis, o que sugere uma conexão (ainda que pequena). A curva que descreve a distribuição dos pontos torna isto um pouco mais nítido. Novamente, por mais forte que canais de posicionamento sejam, somente o cálculo desta correlação pode responder à esta pergunta definitivamente. Por enquanto nosso interesse é apenas na observação dos dados.
+
+Os canais de posicionamento não se encontram restritos apenas ao uso convencional nos eixos x e y. Como mostramos no *Dumbbell Plot*, é possível ir além. Partiremos para explorar a visualização de gráficos justapostos, posicionados em escala de modo a possibilitar a comparação da distribuição dos valores nos dados. Veja o mesmo gráfico exibido acima, mas agora justaposto a gráficos de densidade acumulada alinhados de modo a explorarmos o fator posicionamento. 
+
+```{r message=FALSE, warning=FALSE}
+
+p1 <- projetos %>% 
+  filter(test_size_avg > 0.0, tests_per_kloc > 0.0) %>% 
+  ggplot(aes(x= tests_per_kloc, y= test_size_avg, size=team, color=lang)) + 
+  geom_point(alpha = .3) +
+  scale_x_log10()+ 
+  scale_y_log10()+ 
+  labs(x='Testes por 1000 linhas de código',  
+    y='Tamanho dos casos de teste', 
+    title=NULL, 
+    subtitle=NULL, 
+    size="Tamanho da equipe",
+    color="Linguagem",
+    caption="Travistorrent") +
+  theme_bw() +
+  theme(panel.border=element_blank(),
+    legend.position="bottom",
+    plot.margin=unit(c(10,0,0,0),"points"))
+
+
+
+p2 <- projetos %>% ggplot(aes(x=tests_per_kloc,colour=lang,fill=lang)) + 
+  geom_density(alpha=0.5) + 
+  scale_x_log10()+
+  labs(x=NULL,
+    y=NULL,
+    title="Volume de teste x Tamanho dos testes",
+    subtitle="(tests_per_kloc, test_size_avg)") +
+  theme_bw() +
+  theme(plot.background=element_rect(fill="#ffffff"),
+    legend.background = element_rect(fill="#ffffff"),
+    panel.background=element_rect(fill="#ffffff"),
+    panel.grid.minor=element_blank(),
+    panel.grid.major.y=element_blank(),
+    panel.grid.major.x=element_blank(),
+    axis.ticks=element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    panel.border=element_blank(),
+    legend.position="none",
+    plot.margin=unit(c(20,0,0,20),"points"))
+
+p3 <- projetos %>% ggplot(aes(x=test_size_avg,colour=lang,fill=lang)) + 
+  geom_density(alpha=0.5) + 
+  scale_x_log10()+
+  coord_flip()  + 
+  labs(x=NULL,  
+    y=NULL) +
+  theme(plot.background=element_rect(fill="#ffffff"),
+    legend.background = element_rect(fill="#ffffff"),
+    panel.background=element_rect(fill="#ffffff"),
+    panel.grid.minor=element_blank(),
+    panel.grid.major.y=element_blank(),
+    panel.grid.major.x=element_blank(),
+    axis.ticks=element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    panel.border=element_blank(),
+    legend.position="none",
+    plot.margin=unit(c(-10,60,70,0),"points"))
+
+grid.arrange(arrangeGrob(p2,ncol=2,widths=c(3,1)),
+    arrangeGrob(p1,p3,ncol=2,widths=c(3,1)),
+    heights=c(1,3))
+
+```
+
+Observe que ainda não adicionamos nenhuma nova variável ao gráfico, apenas a densidade acumulada de cada eixo. Isto nos deu mais evidências de que ambas se acumulam em valores médios, o sugere um baixo desvio padrão. Uma forma de percebermos isto com mais segurança por meio de visualizações é utilizando *bloxplots* ao invés de distribuição acumulada.
+
+```{r message=FALSE, warning=FALSE}
+
+p7 <- projetos %>% 
+  filter(test_size_avg > 0.0, tests_per_kloc > 0.0) %>% 
+  ggplot(aes(x= tests_per_kloc, y= test_size_avg, size=team, color=lang)) + 
+    geom_point(alpha = .3) +
+    scale_x_log10()+ 
+    scale_y_log10()+ 
+    labs(x='Testes por 1000 linhas de código',  
+      y='Tamanho dos casos de teste', 
+      title=NULL, 
+      subtitle=NULL, 
+      size="Tamanho da equipe",
+      color="Linguagem",
+      caption="Travistorrent") +
+    theme_bw() +
+    theme(panel.border=element_blank(),
+      legend.position="bottom",
+      plot.margin=unit(c(10,0,0,0),"points"))
+
+
+p8 <- projetos %>%
+  ggplot(aes(y = tests_per_kloc,x='hjhj',fill=lang)) +
+    scale_y_log10()+
+    coord_flip()  + 
+    geom_boxplot(outlier.alpha = .0, color = "#808080") +
+    labs(x=NULL,  
+      y=NULL,
+      title="Volume de teste x Tamanho dos testes",
+      subtitle="(tests_per_kloc, test_size_avg)") +
+    theme(plot.background=element_rect(fill="#ffffff"),
+      legend.background = element_rect(fill="#ffffff"),
+      panel.background=element_rect(fill="#ffffff"),
+      panel.grid.minor=element_blank(),
+      panel.grid.major.y=element_blank(),
+      panel.grid.major.x=element_blank(),
+      axis.ticks=element_blank(),
+      axis.text.y = element_blank(),
+      axis.text.x = element_blank(),
+      panel.border=element_blank(),
+      legend.position="none",
+      plot.margin=unit(c(0,-20,0,20),"points"))
+
+p9 <- projetos %>%
+  ggplot(aes(x = 'um label',y = test_size_avg,fill=lang)) +
+    scale_y_log10()+
+    geom_boxplot(outlier.alpha = .0, color = "#808080") +
+    labs(x=NULL,  
+      y=NULL) +
+    theme(plot.background=element_rect(fill="#ffffff"),
+      legend.background = element_rect(fill="#ffffff"),
+      panel.background=element_rect(fill="#ffffff"),
+      panel.grid.minor=element_blank(),
+      panel.grid.major.y=element_blank(),
+      panel.grid.major.x=element_blank(),
+      axis.ticks=element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_blank(),
+      panel.border=element_blank(),
+      legend.position="none",
+      plot.margin=unit(c(0,60,70,0),"points"))
+
+grid.arrange(arrangeGrob(p8,ncol=2,widths=c(3,1)),
+   arrangeGrob(p7,p9,ncol=2,widths=c(3,1)),
+   heights=c(1,3))
+
+```
+
+Perceba que os *boxs* são curtos em relação a amplitude de valores das variáveis, o que aponta para um acumulo de valores em torno da mediana e, por sua vez, um provável desvio padrão baixo para ambas as variáveis. Mas ainda não sabemos se testes grandes levam a poucos testes.
+
+Podemos tentar justapor o gráfico de dispersão destas duas variáveis em relação a outras. Usaremos agora o canal de posicionamento espacial para comparar estas variáveis com a variável **team** em um canal mais eficazes que a o tamanho das marcas (na área das marcas exibiremos **activity_period**, apenas para ampliar a visualização dos dados no nosso gráfico). Observe abaixo.
+
+```{r message=FALSE, warning=FALSE}
+
+p7 <- projetos %>% 
+  filter(test_size_avg > 0.0, tests_per_kloc > 0.0) %>% 
+  ggplot(aes(x= tests_per_kloc, y= test_size_avg, size=activity_period, color=lang)) + 
+    geom_point(alpha = .3) +
+    scale_x_log10()+ 
+    scale_y_log10()+ 
+    labs(x='Testes por 1000 linhas de código',  
+      y='Tamanho dos casos de teste', 
+      title=NULL, 
+      subtitle=NULL, 
+      size="Idade do projeto",
+      color="Linguagem",
+      caption="Travistorrent") +
+    theme_bw() +
+    theme(panel.border=element_blank(),
+      legend.position="bottom",
+      plot.margin=unit(c(10,0,0,0),"points"))
+
+
+p8 <- projetos %>%
+  filter(test_size_avg > 0.0, tests_per_kloc > 0.0) %>% 
+  ggplot(aes(x=tests_per_kloc,y = team   )) +
+    scale_x_log10()+ 
+    scale_y_log10()+ 
+    geom_point(alpha = .3, size=.0) +
+    labs(x=NULL,  
+      y=NULL,
+      title="Volume de teste x Tamanho dos testes",
+      subtitle="(tests_per_kloc, test_size_avg)") +
+    theme(plot.background=element_rect(fill="#ffffff"),
+      legend.background = element_rect(fill="#ffffff"),
+      panel.background=element_rect(fill="#ffffff"),
+      panel.grid.minor=element_blank(),
+      panel.grid.major.y=element_blank(),
+      panel.grid.major.x=element_blank(),
+      axis.ticks=element_blank(),
+      axis.text.y = element_blank(),
+      axis.text.x = element_blank(),
+      panel.border=element_blank(),
+      legend.position="none",
+      plot.margin=unit(c(0,0,0,30),"points"))
+
+p9 <- projetos %>%
+  filter(test_size_avg > 0.0) %>%
+  ggplot(aes(x=test_size_avg, y = team)) +
+    scale_x_log10()+ 
+    scale_y_log10()+ 
+    geom_point(alpha = .3, size=.0) +
+    coord_flip()  + 
+    labs(x=NULL,  
+      y=NULL) +
+    theme(plot.background=element_rect(fill="#ffffff"),
+      legend.background = element_rect(fill="#ffffff"),
+      panel.background=element_rect(fill="#ffffff"),
+      panel.grid.minor=element_blank(),
+      panel.grid.major.y=element_blank(),
+      panel.grid.major.x=element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks=element_blank(),
+      panel.border=element_blank(),
+      legend.position="none",
+      plot.margin=unit(c(10,-20,85,0),"points"))
+
+grid.arrange(arrangeGrob(p8,ncol=2,widths=c(3,1)),
+    arrangeGrob(p7,p9,ncol=2,widths=c(3,1)),
+    heights=c(1,3))
+
+```
+
+Veja que, mesmo através de canais eficazes, não conseguimos ver correlação entre estas variáveis **test_size_avg** e **tests_per_kloc**, e a variável **team**. Nesta caso o excesso de informação chega a comprometer a visualização (5 variáveis diferentes no mesmo gráfico).
+
+Para responder nosso questionamento nos restou calcular o coeficiente de correlação linear para as duas variáveis do nosso estudo. Novamente usaremos os mesmos três métodos distintos (Pearson, Spearman e Kendall).
+
+```{r}
+projetos %>%
+  summarise(pearson = cor(tests_per_kloc, test_size_avg, method = "pearson"),
+    spearman = cor(tests_per_kloc, test_size_avg, method = "spearman"),
+    kendall = cor(tests_per_kloc, test_size_avg, method = "kendall"))
+```
+
+#### Conclusão
+
+Com base nos gráficos, sobretudo a dispersão dos pontos no plano, e no resultado dos coeficientes, podemos concluir que estas duas variáveis possuem uma certa correlação linear inversa, porém fraca. O coeficiente de Pearson aponta para a ausência de correlação, porém Spearman e Kendall apresentam uma correlação muito fraca.
+
+# Conclusão final
+
+Pudemos perceber a eficácia de diversos canais de visualização e extrair informação dos nossos dados com base neles. Verificamos que nossas observações foram mais frutíferas quando utilizamos gráficos de dispersão, o que argumenta a favor da grande importância deste instrumento.
+
+A fraca, mas nítida correlação linear entre **tests_per_kloc** e **test_size_avg** visível nos gráficos, mas não detectada pelos coeficientes de dispersão nos mostra que modelos matemáticos não são o bastante em certos casos. Já a indiscutível correlação entre **sloc_end** e **sloc_med** aponta que quando os gráficos cumprem o seu papel de apontar o caminho, é o modelo matemático que confirmar o resultado.

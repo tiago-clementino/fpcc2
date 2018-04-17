@@ -101,6 +101,9 @@ ggplot(df, aes(x = x, y = y)) +
   geom_point(colour = "darkgrey", size = 4) + 
   theme_bw()
 cor(df$x, df$y, method = "pearson")
+
+ggplot(diamonds, aes(x = carat, y = price)) + 
+  geom_hex()
 ```
 
 Relação não linear
