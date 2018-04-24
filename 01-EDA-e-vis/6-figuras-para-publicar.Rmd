@@ -1,11 +1,33 @@
 ---
 title: "Dicas sobre figuras para publicação"
-output: 
-  html_notebook: 
-    toc: true
-    toc_float: true
+author: "Nazareno Andrade"
+date: "19 de Março de 2018"
+output:
+  pdf_document:
+    toc: yes
+    pandoc_args: ["-V", "classoption=twocolumn"]
+    number_sections: true
+  html_notebook:
     theme: lumen
+    toc: yes
+    toc_float: yes
+  html_document:
+    df_print: paged
+    toc: yes
+header-includes:
+  - \usepackage{multicol}
+  - \usepackage{amsfonts,amssymb,amsmath,mathbbol}
+  - \usepackage{graphics,graphicx,epsfig}
+  - \usepackage{rotating,subfig}
+  - \usepackage{caption}
+  - \usepackage[text={7in,10in},centering]{geometry}
 ---
+
+**Tiago Lucas Pereira Clementino**
+
+**15 de abril de 2018**
+
+### Bibliotecas utilizadas
 
 ```{r}
 library(ggplot2)
@@ -15,6 +37,16 @@ library(dplyr, warn.conflicts = F)
 theme_set(theme_bw())
 # mas experimente com outros. Veja todos em ?theme_bw
 ```
+
+
+
+\begin{tabular}{|l|l|}\hline
+Age & Frequency \\ \hline
+18--25  & 15 \\
+26--35  & 33 \\
+36--45  & 22 \\ \hline
+\end{tabular}
+
 
 # B A BA
 
@@ -64,4 +96,3 @@ A forma mais segura e portável de você escrever seus artigos, relatórios, etc
 Para fazer seu documento usando latex, provavelmente a solução com menos configuração e mais facilidade de compartilhar depois que você encontrará é o [overleaf](https://www.overleaf.com). Depois de logar, procure um modelo/formato da ACM ou IEEE de duas colunas (por exemplo, o _Association for Computing Machinery (ACM) - SIG conference proceedings Template_) e o restante será intuitivo.
 
 Outra possibilidade mais recente que ainda não explorei muito mas parece bem interessante é escrever o artigo direto em Markdown ou RMarkdown. Há um pacote do pessoal do RStudio para isso, o [rticles](https://github.com/rstudio/rticles).
-

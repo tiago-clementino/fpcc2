@@ -1,0 +1,285 @@
+---
+title: "LPCC02 - Lab 2 - Checkpoint 1"
+author: "Tiago Lucas Pereira Clementino"
+date: "20 de Março de 2018"
+output:
+  pdf_document: 
+    toc: yes
+    pandoc_args: ["-V", "classoption=twocolumn"]
+    number_sections: true
+    fig_width: 6 
+    fig_height: 4.5
+  beamer_presentation:
+    highlight: haddock
+  includes:
+    keep_tex: yes
+  html_document:
+    toc: true
+    toc_float: true
+    theme: lumen
+    fig_width: 6 
+    fig_height: 4.5 
+  word_document: default
+header-includes:
+  - \usepackage{multicol}
+  - \usepackage{amsfonts,amssymb,amsmath,mathbbol}
+  - \usepackage{graphics,graphicx,epsfig}
+  - \usepackage{rotating,subfig}
+  - \usepackage{caption}
+---
+\fontsize{11}{18}
+\fontseries{b}
+\selectfont
+```{r setup, message=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(here)
+library(knitr)
+library(gridExtra)
+library(ggExtra)
+library(gapminder)
+library(ggalt)
+theme_set(theme_bw())
+options(warn=-1)
+```
+
+# Contexto
+
+Nosso objetivo é analisar e extrair informação de dados coletados por uma plataforma aberta de integração contínua chamada Travistorrent. O Travisttorrent é um serviço de integração contínua de projetos disponíveis no Github, um repositório de projetos colaborativos também aberto.
+
+A integração contínua é um processo onde o desenvolvedor integra o código alterado e/ou criado ao projeto principal na mesma frequência com que as funcionalidades são introduzidas.
+
+Nossa intenção é analisar os dados fazendo um paralelo entre as linguagens de programação Java e Ruby, levantando questões inerentes às características dos projetos de software que as utilizam. Diante disto, descartamos quaisquer dados referentes a outras linguagens.
+
+# Nossos Dados
+
+Os dados são informações diversas, referentes a projetos disponíveis no Github e que, no momento da coleta, utilizaram o Travistorent nos últimos três meses, além de corresponder a certas especificações de filtragem. Estas informações descrevem operações inerentes ao andamento de projetos no Github e a procedimentos de integração contínua (testes, *commits*, PR, *builds* de integração, etc) ao longo de um certo período de tempo.
+
+```{r read, include=FALSE}
+projetos = read_csv(here::here("dados/projetos.csv"))
+```
+```{r clean, include=FALSE}
+projetos = projetos %>% 
+    filter(lang != "javascript")
+```
+# Distribuições dos dados entre Java e Ruby 
+
+O gráfico abaixo apresenta a distribuição dos dados entre Java e Ruby. É fácil perceber que a vantagem numérica de Ruby em relação à Java é grande, mas isto não deve interferir em nossas observações. Nossas análises farão um paralelo entre estas duas linguagens.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+projetos %>% 
+  group_by(lang) %>% 
+  summarise(projetos_ = n()) %>% 
+  ggplot(aes(x = lang, y = projetos_)) + 
+  geom_col(fill = "darkcyan", color = "darkcyan") +
+  labs(x=NULL,  
+    y='Projetos', 
+    title="Dados por Linguagem (Java x Ruby)", 
+    subtitle="(lang, n)", 
+    caption="Travistorrent") +
+  theme(plot.title = element_text(face="bold",size = "17"),
+    plot.subtitle = element_text(size = "12"),
+    plot.caption = element_text(size="12"),
+    axis.title.x = element_text(size ="15"),
+    axis.title.y = element_text(size="15"),
+    axis.text.x = element_text(size="12"),
+    axis.text.y = element_text(size="12"),
+    panel.border=element_blank())
+```
+
+# Objetivos
+
+Precisamos avaliar um conjunto de variáveis em um exercício de visualização de correlações de dados através de marcas e canais. O objetivo de nossa investigação é entender os dados e as relações entre suas variáveis. Tendo isto em vista, é importante ser capaz de escolher as marcas e canais adequados para nossa análise.
+
+A partir disto, devemos propor possíveis correlações alvo ligadas às relações entre variáveis que julguemos interessantes, para em seguida proceder a análise.
+
+## Regras
+
+De acordo com o enunciado do Laboratório 2 checkpoint 02 da disciplina LPCC2, este documento deve conter gráficos plenamente legíveis (tanto o texto quanto os elementos) para um zoo de 100% em um documento pdf de duas colunas (os gráficos devem ter a largura de uma coluna) e seguir as boas práticas de visualização estudadas. Além de texto descrevendo a tarefa de visualização.
+
+# Variáveis
+
+Nossa base de dados conta com variáveis bem intuitivas, cada uma delas descreve alguma característica dos projetos. Vide tabela no final deste documento
+
+Na nossa análise buscaremos uma ou mais características da relação entre as variáveis **sloc\_end** e **sloc\_med**, explorando marcas e canais gráficos. Além de incluirmos eventualmente **activity\_period**, **team** e **lang** para posicionar nossas análises no nosso conjunto de dados.
+
+## Variáveis de estudo
+
+Selecionamos para este relatório duas variáveis que serão alvo de comparações, medições e visualizações, são elas: **sloc\_end** e **sloc\_med**, outras variáveis também podem ser usadas na comparação como **lang** ou **team**. Nosso objetivo é observar seu comportamento, confirmando ou refutando certas perspectivas de correlação que chamaremos de questões e são descritas abaixo.
+
+# Análise
+
+A partir daqui analisaremos nossos dados com base em questões levantadas a partir de correlações entre variáveis. Neste estudo, o principal foco é a análise visual. Utilizaremos diversas variedades de gráficos estatísticos, canais de visualização e marcas.
+
+Um canal é uma dimensão usada para converter dados de uma tabela em uma visualização gráfica. Um canal pode ser de alta ou baixa magnitude, representando uma eficácia na visualização de informação maior ou menor. 
+
+Nosso primeiro objetivo é entender como o volume de código se comporta ao longo do tempo, e faremos isto comparando as variáveis **sloc\_end** e **sloc\_med**, sempre fazendo um paralelo com variáveis significativas como **lang** e/ou **team**, priorizando canais mais eficazes para variáveis alvo de análise.
+
+## **sloc\_end** e **sloc\_med**
+
+A principal relação entre estas duas variáveis é o tempo. **sloc\_med**, como já foi mencionado, mede o volume de código de um projeto na metade de seu tempo de vida (até o fim da medição dos dados), já **sloc\_end** mede o volume total de código no fim do período de medição. É de se esperar que **sloc\_med** sejá menor que **sloc\_end**, mas qual a proporção desta diferença?
+
+Para começar a responder esta pergunta poderíamos pensar em usar um gráfico de dispersão (*scatter plot*). O gráfico de dispersão posiciona todos os elementos observados como pontos em um plano cartesiano, onde x corresponde a uma variável e y à outra.
+
+Um bom tipo de gráfico para relacionar **sloc\_med** e **sloc\_end** é o *Dumbbell Plot*, que pode ser visto como uma variação do gráfico de dispersão. Nele o canal "posicionamento bidimensional" está representado na forma de pontos em um plano tal como o gráfico de dispersão. Porém, o eixo x apresenta duas variáveis e a progressão de uma até a outra, formando uma linha (o comprimento da linha é mais um canal). Abaixo está um *Dumbbell Plot* onde x descreve a variável **sloc\_med** e a distância entre ela e **sloc\_end**. Incluiremos também as variáveis **lang** e **team** nos canais cor dos pontos e dimensão vertical para posicionar melhor nosso gráfico nos nossos dados.
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+gg <- projetos %>%
+  ggplot(aes(x=sloc_med, xend=sloc_end, y=team, group=team, color=lang)) + 
+    geom_dumbbell(size=2.0, alpha=.6) + 
+    scale_y_log10()+ 
+    labs(x='Código desenvolvida na segunda metade do projeto',  
+      y='Tamanho da equipe', 
+      title="Progressão do Desenvolvimento do Código", 
+      subtitle="( (sloc_me,sloc_end) ,team)", 
+      color='Linguagem',
+      caption="Travistorrent") +
+    theme(plot.title = element_text(face="bold",size = "17"),
+      plot.background=element_rect(fill="#ffffff"),
+      panel.background=element_rect(fill="#ffffff"),
+      legend.background = element_rect(fill="#ffffff"),
+      panel.grid.minor=element_blank(),
+      panel.grid.major.y=element_blank(),
+      panel.grid.major.x=element_line(color="#a3c4dc"),
+      axis.ticks=element_blank(),
+      legend.position="top",
+      plot.subtitle = element_text(size = "12"),
+      plot.caption = element_text(size="12"),
+      legend.text = element_text(size ="12"),
+      legend.title = element_text(size ="15"),
+      axis.title.x = element_text(size ="15"),
+      axis.title.y = element_text(size="15"),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(size="12"),
+      panel.border=element_blank())
+plot(gg)
+```
+
+Observando os pontos e traços neste gráfico podemos ter a ideia de que talvez a maior parte do desenvolvimento ocorra entre o início e a primeira metade do projeto. Isto com base na diferença entre o comprimento dos traços que descrevem a distância entre **sloc\_med** e **sloc\_end**, e a distância entre **sloc\_med** e a origem de x. Porém, é uma conclusão muito inicial, pois há muitos pontos aglomerados de difícil visualização, além de alguns pontos com grandes distâncias entre **sloc\_med** e **sloc\_end**.
+
+Uma nova evidência para esta afirmação poderia ser obtida observando não as duas variáveis separadas, mas uma nova variável composta pela proporção entre elas. A fórmula $$\frac{sloc\_med*100}{sloc\_end}$$ nos traz este valor. Novamente, para posicionar melhor nossa visualização nos nossos dados, incluiremos as seguintes três variáveis no gráfico; **team**, **activity\_period** e **lang** nos canais dimensão horizontal, área do ponto e cor, respectivamente. Um *boxplot* para cada um de cem *breaks* (quando diferentes de vazio) ajuda a visualizar a relação.
+
+```{r echo=FALSE}
+projetos %>%
+  ggplot(aes(x=cut(team, breaks=100), y=(sloc_med*100)/sloc_end)) +
+  geom_count(aes(color=lang,size=activity_period),alpha = .5)+ 
+  geom_boxplot(outlier.alpha = .0, fill='#000000', color = "darkcyan") +
+    labs(x='Tamanho da equipe', 
+      y='Código desenvolvida até metade do projeto (%)', 
+      color='Linguagem', 
+      size='Atividade', 
+      title="Progressão do Desenvolvimento do Código", 
+      subtitle="(team, (sloc_med*100) / sloc_end)", 
+      caption="Travistorrent") +
+  theme(plot.title = element_text( face="bold",size = "17"),
+    plot.background=element_rect(fill="#ffffff"),
+    legend.background = element_rect(fill="#ffffff"),
+    panel.background=element_rect(fill="#ffffff"),
+    plot.subtitle = element_text(size = "12"),
+    plot.caption = element_text(size="12"),
+    legend.text = element_text(size ="12"),
+    legend.title = element_text(size ="15"),
+    axis.title.x = element_text(size ="15"),
+    axis.title.y = element_text(size="11.5"),
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(size="12"),
+    panel.grid.minor=element_blank(),
+    panel.grid.major.y=element_blank(),
+    panel.grid.major.x=element_line(),
+    axis.ticks=element_blank(),
+    legend.position="top",
+    panel.border=element_blank())
+```
+
+No gráfico acima é possível perceber que a maior parte dos pontos está acima de 60%, o que nos leva a concluir que geralmente mais da metade do código é escrito no início do projeto. Além disto, é frequênte, de acordo com o gráfico, projetos com 80% ou 90% do desenvolvimento ocorrido na primeira metade de sua vida. Observando os *bosplots* pode-se perceber apenas um *box* abaixo de 50%, e com apenas um projeto.
+
+Uma visualização mais clara talvez possa vir com um gráfico de dispersão (*scatter plot*) simples, que descreve a posição de cada projeto em um plano cartesiano onde x é o **sloc\_end** e y é **sloc\_med**. Novamente, incluiremos também as variáveis **lang** e **team** nos canais cor e área dos pontos para posicionar melhor nosso gráfico nos nossos dados.
+
+```{r echo=FALSE}
+projetos %>% 
+    ggplot(aes(x= sloc_end, y= sloc_med , color = lang, size=team),na.rm=TRUE) + 
+    scale_x_log10()+ 
+    scale_y_log10()+ 
+    geom_point(alpha = .5) + 
+        labs(x='Linhas de código (final)',  
+             y='Linhas de código (mediana)', 
+             title='Progressão do volume do código', 
+             color='Ling.', 
+             size='Equipe', 
+             subtitle='(sloc_end, sloc_med)', 
+             caption="Travistorrent") +
+  theme_bw() +
+  theme(plot.title = element_text(face="bold",size = "17"),
+        panel.border=element_blank(),
+        legend.position="top",
+        plot.subtitle = element_text(size = "12"),
+        plot.caption = element_text(size="12"),
+        legend.text = element_text(size ="12"),
+        legend.title = element_text(size ="15"),
+        axis.title.x = element_text(size ="15"),
+        axis.title.y = element_text(size="15"),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        plot.margin=unit(c(10,0,0,0),"points"))
+
+```
+
+Veja a eficácia do canal "posicionamento no plano", apenas com base no gráfico acima já podemos perceber claramente dois atributos desta relação. O primeiro aponta que de fato, como já poderíamos supor, **sloc\_end** é maior que **sloc\_med** aparentemente em todos os casos. Perceba que não há nenhum ponto acima da diagonal principal do nosso gráfico. Neste momento, não podemos garantir que esta afirmação é verdade para todos os casos, pois os canais de visualização geralmente proveem apenas uma direção para a análise. Em buscar de uma resposta categórica, precisamos de um modelo. Veja abaixo.
+
+```{r echo=FALSE}
+
+projetos %>% 
+  filter(sloc_med > sloc_end) %>%
+  summarise(`sloc_med > sloc_end`=n())
+
+```
+
+Agora podemos afirmar categoricamente que nenhum projeto em nossa base encolheu (refatoramento) entre a metade e o fim de sua vida. O segundo atributo da relação entre estas duas variáveis diz respeito à linearidade. É possível perceber que a figura composta pelos pontos no gráfico forma uma linha muito nítida à quase que exatos 45° de inclinação, bem em cima da diagonal principal do gráfico. Isto sugere que os valores de **sloc\_med** e **sloc\_end** são muito parecidos, o que nos leva a crer que a maior parte do desenvolvimento ocorra na primeira metade da vida dos projetos na nossa base de dados, como os dois gráficos anteriores já demonstravam.
+
+Novamente os canais de visualização nos apontam a direção da análise, mas para responder se a maior parte do desenvolvimento realmente ocorre no início do projeto devemos recorrer aos modelos. Através de um coeficiente de correlação linear entre **sloc\_med** e **sloc\_end** podemos ter a confirmação que buscamos. Nesta correlação sempre retornará um valor entre -1 e 1, onde -1 representa uma perfeita correlação decrescente, 0 a ausência de correlação e 1 representa uma correlação crescente forte. Aqui calculamos a correção entre estas variáveis de três métodos diferentes.
+
+```{r echo=FALSE}
+projetos %>%
+    summarise(pearson = cor(sloc_end, sloc_med, method = "pearson"),
+              spearman = cor(sloc_end, sloc_med, method = "spearman"),
+              kendall = cor(sloc_end, sloc_med, method = "kendall"))
+```
+
+A tabela apresenta os três valores referentes as três formas de calcular a correlação entre as variáveis. Perceba que todos apresentam uma correlação superior a 0.9, o que indica uma forte correlação. Esta evidência responde nossa atual dúvida. De fato, como os gráficos mostraram, a maior parte do desenvolvimento ocorre na primeira metade do projeto.
+
+# Conclusão
+
+Podemos concluir com base nos gráficos e resultados matemáticos, que nenhum projeto teve seu código refatorado a ponto de encolher da metade do tempo de vida do projeto até o fim e que a maior parte do desenvolvimento ocorre, em média, na primeira metade do tempo de vida do projeto.
+
+Como ameaça à validade desta conclusão, podemos mencionar que a variável **sloc\_end** não representa, de fato, o fim da vida do projeto, mas o fim da medição. Alguns projetos podem ter entrado em produção (quando passar a sofrer muito menos alterações) antes mesmo do momento em que **sloc\_med** foi registrado, outros não terem atingido a maturidade mesmo ao final do tempo total.
+\newpage
+\begin{multicols}{1}
+\begin{center}
+\begin{tabular}{c}
+\bf {\Large Anexos}
+\end{tabular}
+\end{center}
+\end{multicols}
+
+\begin{multicols}{1}
+\begin{tabular}{|l|p{9cm}|l|}\hline
+Nome & Descrição & Tipo \\ \hline \hline
+\bf gh\_project\_name & nome do projeto & Categórica \\ \hline
+\bf team & total de desenvolvedores que participaram do projeto até sua última medição & Numérica \\ \hline
+\bf lang & linguagem de programação predominante & Categórica \\ \hline
+\bf sloc\_end & total de linhas de código na última medição do projeto & Numérica \\ \hline
+\bf sloc\_med & total de linhas de código no meio do tempo de atividade estimado do projeto & Numérica \\ \hline
+\bf activity\_period & tempo de atividade estimado do projeto & Numérica \\ \hline
+\bf num\_commits & total de submissões de alteração durante todo o tempo de atividade do projeto & Numérica \\ \hline
+\bf commits\_per\_month & total de submissões por mês & Numérica \\ \hline
+\bf tests\_per\_kloc & casos de teste por total de linhas de código & Numérica \\ \hline
+\bf total\_builds & total de integrações & Numérica \\ \hline
+\bf build\_success\_prop & proporção de integrações bem-sucedidas & Numérica \\ \hline
+\bf builds\_per\_month & total médio de integrações por mês & Numérica \\ \hline
+\bf tests\_added\_per\_build & total médio de testes adicionados por integração & Numérica \\ \hline
+\bf tests\_successful & total de testes bem-sucedidos & Numérica \\ \hline
+\bf test\_density & densidade de testes & Numérica \\ \hline
+\bf test\_size\_avg & tamanho médio dos casos de testes & Numérica \\ \hline
+\end{tabular}
+
+\end{multicols}
+
