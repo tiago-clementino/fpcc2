@@ -152,7 +152,7 @@ funcao_bootstrap1 <- function(dado, indices){
 funcao_bootstrap2 <- function(dado, indices){
     d = dado %>% 
       slice(indices) %>% 
-      group_by(group) %>% 
+      group_by(group,day) %>% 
       summarise(click_through = mean(visited)) %>% 
       pull(click_through)   
     return(mean(d[2]))
@@ -183,28 +183,105 @@ grid.arrange(arrangeGrob(p2,ncol=1,widths=c(1)),
     arrangeGrob(p1,ncol=1,widths=c(1)),
     heights=c(1,1))
 
+```
+
+```{r}
 
 
-
-funcao_bootstrap3 <- function(dado, indices){
+funcao_bootstrap_0301 <- function(dado, indices){
     d = dado %>% 
       slice(indices) %>% 
+      filter(format(day, "%m-%d") == '03-01') %>%
       group_by(group) %>% 
       summarise(click_through = mean(visited)) %>% 
       pull(click_through)   
     return(d[1] - d[2])
 }
 
+funcao_bootstrap_0302 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      filter(format(day, "%m-%d") == '03-02') %>%
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(d[1] - d[2])
+}
+
+funcao_bootstrap_0303 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      filter(format(day, "%m-%d") == '03-03') %>%
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(d[1] - d[2])
+}
+
+funcao_bootstrap_0304 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      filter(format(day, "%m-%d") == '03-04') %>%
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(d[1] - d[2])
+}
+
+funcao_bootstrap_0305 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      filter(format(day, "%m-%d") == '03-05') %>%
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(d[1] - d[2])
+}
+
+funcao_bootstrap_0306 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      filter(format(day, "%m-%d") == '03-06') %>%
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(d[1] - d[2])
+}
+
+funcao_bootstrap_0307 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      filter(format(day, "%m-%d") == '03-07') %>%
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(d[1] - d[2])
+}
+
+funcao_bootstrap_0308 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      filter(format(day, "%m-%d") == '03-08') %>%
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(d[1] - d[2])
+}
 
 bootstraps3 <- boot(data = sessions, 
-                   statistic = funcao_bootstrap3, # <- referência para a função 
+                   statistic = funcao_bootstrap_0301, # <- referência para a função 
                    R = 200) # número de bootstraps
+
+glimpse(bootstraps3$t)
 
 tibble(estatistica = as.double(bootstraps3$t)) %>% 
   ggplot(aes(x = estatistica)) + 
   geom_histogram(binwidth = .0005, fill = "white", color="green")
 
 boot.ci(bootstraps3, conf = 0.95, type = "basic")
+
+
+
 ```
 
 
