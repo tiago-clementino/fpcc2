@@ -1,6 +1,6 @@
 ---
-title: "FPCC1"
-subtitle: "Laboratório 02 Checkpoint 04"
+title: "FPCC01"
+subtitle: "Inferência via ICs"
 author:
 - name: "Tiago Clementino"
 date: "`r format(Sys.Date(), '%d de %B de %Y')`"
@@ -26,6 +26,8 @@ vignette: >
 library(tidyverse)
 library(here)
 library(lubridate)
+library(boot)
+library(gridExtra)
 ```
 
 ```{r read, include=FALSE}
@@ -38,7 +40,7 @@ buscas = read_csv(here::here("data/search_data.csv"))
 
 Vamos reproduzir um problema de exploração de dados que a Fundação Wikimedia usou em 2016 no recrutamento de pessoas para trabalhar em seu departamento de descoberta. O objetivo é seguir as instruções colocadas na tarefa original, respondendo as 4 perguntas que são colocadas.
 
-A entrega consiste de uma versão de um repositório no Github com um link para o seu relatório final no início do README.md do seu repositório. 
+Neste laboratório, o objetivo é explorar as possibilidades da inferência estatística por intervalos de confiança. A entrega consiste de um relatório explorando por inferência em IC as três primeiras perguntas do problema proposto pela Wikimedia. Além de uma análise da pergunta 01, agora comparando o grupo A internamento (dividido de forma aleatória), também por inferência em IC. 
 
 
 ### Contexto
@@ -51,7 +53,7 @@ O departamento de descoberta da Fundação Wikimedia utiliza um registro de even
 * *zero results rate*: a proporção de buscas que não tiveram resultados.
 
 
-e outras métricas fora do escopo desta tarefa. EL usa Javascript para enviar mensagens aos nossos servidores de forma assíncrona quando o usuário realiza ações específicas. Nesta tarefa você vai analisar um subconjunto de nosso registro de eventos.
+e outras métricas fora do escopo desta tarefa. EL usa Javascript para enviar mensagens aos servidores da Wikimedia de forma assíncrona quando o usuário realiza ações específicas. Nesta tarefa irei analisar um subconjunto de nosso registro de eventos.
 
 
 ### Dados
@@ -83,7 +85,7 @@ O campo `action` pode ter os seguintes valores:
 
 ### Descrição do objetivo
 
-O objetivo aqui é criar um relatório reproduzível respondendo, de acordo com os dados, as seguintes perguntas:
+O objetivo aqui é criar um relatório reproduzível respondendo por inferência estatística m IC, de acordo com os dados, as seguintes perguntas:
 
 
  - **Q1**. Qual é a *clickthrough rate* geral diária? Como isto varia entre os grupos?
@@ -91,18 +93,16 @@ O objetivo aqui é criar um relatório reproduzível respondendo, de acordo com 
  - **Q2**. Quais resultados da busca (posições) as pessoas tendem a seguir primeiro? Como isto varia dia após dia?
 
  - **Q3**. Qual é a *zero results rate* geral diária? Como isto varia entre os grupos?
-
- - **Q4**. Tendo a duração da sessão como a diferença entre o primeiro e o último evento em uma sessão. Escolha uma variável nos dados e descreva seu relacionamento com a duração da sessão. Visualize o relacionamento.
-
- - Resuma suas descobertas em um sumário executivo.
+ 
+ - **Q1.b**. Responda **Q1** novamente, porém utilize apenas o grupo A, o dividindo randomicamente em dois grupos A e A'.
 
 
-*Todos os resultados devem ser amplamente replicáveis.
+*A questão **Q4** descrita na tarefa da Wikimedia fogeiugj ao escopo deste relatório.
 
 
 ### Dados tratados
 
-Para Facilitar nosso esforço em resolver as quatro questões, decidi tratar os dados utilizando o script "import-events_to_searches.R" (editado a partir da versão inicial presente no repositório original deste *checkpoint*). As informações que antes eram referentes a eventos pontuais, agora foram agrupadas em buscas (com possivelmente mais de um evento). Os novos dados, agora simplificados e mais fáceis de tratar, estão dispostos em uma tabela com as seguintes colunas:
+Para Facilitar nosso esforço em resolver as quatro questões, tratei os dados utilizando o script "import-events_to_searches.R" (editado a partir da versão inicial presente no repositório original do *lab 02 checkpoint 04*). As informações que antes eram referentes a eventos pontuais, agora foram agrupadas em buscas (com possivelmente mais de um evento). Os novos dados, agora simplificados e mais fáceis de tratar, estão dispostos em uma tabela com as seguintes colunas:
 
 
 | Campo                      | Tipo    | Descrição                                                             |
@@ -135,6 +135,79 @@ sessions = buscas %>% #agrupando por sessão
               num_clicks = sum(num_clicks, na.rm = TRUE), 
               first_search_zero = ifelse(first(results)==0, "Sim", "Não"))
 ```
+
+Aqui, partindo da premissa que os dados em questão dizm respeito a uma amostra e utilizando o método de *bootstrap*, podemos estimar a distribuição amosral da média da variável `visited`.
+
+```{r}
+
+funcao_bootstrap1 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(mean(d[1]))
+}
+
+funcao_bootstrap2 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(mean(d[2]))
+}
+
+bootstraps1 <- boot(data = sessions, 
+                   statistic = funcao_bootstrap1, # <- referência para a função 
+                   R = 200) # número de bootstraps
+
+
+bootstraps2 <- boot(data = sessions, 
+                   statistic = funcao_bootstrap2, # <- referência para a função 
+                   R = 200) # número de bootstraps
+
+
+
+p1 <- tibble(estatistica = as.double(bootstraps1$t)) %>% 
+  ggplot(aes(x = estatistica)) + 
+  geom_histogram(binwidth = .0005, fill = "white", color="blue")
+
+
+
+p2 <- tibble(estatistica = as.double(bootstraps2$t)) %>% 
+  ggplot(aes(x = estatistica)) + 
+  geom_histogram(binwidth = .0005, fill = "white", color="pink")
+
+grid.arrange(arrangeGrob(p2,ncol=1,widths=c(1)),
+    arrangeGrob(p1,ncol=1,widths=c(1)),
+    heights=c(1,1))
+
+
+
+
+funcao_bootstrap3 <- function(dado, indices){
+    d = dado %>% 
+      slice(indices) %>% 
+      group_by(group) %>% 
+      summarise(click_through = mean(visited)) %>% 
+      pull(click_through)   
+    return(d[1] - d[2])
+}
+
+
+bootstraps3 <- boot(data = sessions, 
+                   statistic = funcao_bootstrap3, # <- referência para a função 
+                   R = 200) # número de bootstraps
+
+tibble(estatistica = as.double(bootstraps3$t)) %>% 
+  ggplot(aes(x = estatistica)) + 
+  geom_histogram(binwidth = .0005, fill = "white", color="green")
+
+boot.ci(bootstraps3, conf = 0.95, type = "basic")
+```
+
+
 
 Partindo para a prática usaremos um *Stepped Line*, que é um tipo de gráfico que reuni características de gráfico de linha e histograma. Trata-se de um gráfico de linha discreto, onde o eixo horizontal representa o tempo (em dias) e o eixo vertical exibe uma proporção calculada dividindo o total de sessões com buscas úteis (com acesso a alguns dos links retornados) pelo total de sessões.
 
